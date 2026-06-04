@@ -23,4 +23,4 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
         name
     )
 
-return pfn
+    return pfn
