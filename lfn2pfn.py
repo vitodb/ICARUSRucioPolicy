@@ -16,6 +16,7 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
     hs = hashlib.sha256(name.encode('utf-8')).hexdigest()
 
     pfn = os.path.join(
+        scope,
         dsetprefix,
         hs[0:2],
         hs[2:4],
