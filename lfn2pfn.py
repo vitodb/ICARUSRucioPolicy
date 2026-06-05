@@ -3,27 +3,67 @@ import os.path
 import hashlib
 
 def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
-    from rucio.client.didclient import DIDClient
+    from rucio.common.types import InternalScope
+    from rucio.rse import rsemanager
 
+    # check to see if PFN is already cached in Rucio's metadata system
     didclient = None
     didmd = {}
-    guid = ''
-    dsetl = None
-    dsetprefix = ''
-    didclient = DIDClient()
-    didmd = didclient.get_metadata(scope,name)
-    guid = didmd.get("guid")
-    dsetl = didclient.get_dataset_by_guid(guid)
-    dsetprefix = list(dsetl)[0].get("name")
+    internal_scope = InternalScope(scope)
+    if getattr(rsemanager, 'CLIENT_MODE', None):
+        from rucio.client.didclient import DIDClient
+        didclient = DIDClient()
+        try:
+            # this may fail if DID not yet registered with Rucio
+            didmd = didclient.get_metadata(internal_scope, name)
+        except:
+            pass
+    if getattr(rsemanager, 'SERVER_MODE', None):
+        from rucio.core.did import get_metadata
+        try:
+            didmd = get_metadata(internal_scope, name)
+        except:
+            pass
+
+    # if it is, just return it
+    md_key = 'PFN_' + rse
+    if md_key in didmd:
+        return didmd[md_key]
+
+    # set pfn using as prefix the string 'generic',
+    # or the file's dataset name if it has one,
+    pfn_prefix = 'generic'
+    dsetname = ''
+    try:
+        didmd = didclient.get_metadata(scope,name)
+        guid = didmd.get("guid")
+        dsetlst = didclient.get_dataset_by_guid(guid)
+        dsetname = list(dsetlst)[0].get("name")
+        pfn_prefix = dsetname
+    except:
+        pass
 
     hs = hashlib.sha256(name.encode('utf-8')).hexdigest()
 
     pfn = os.path.join(
         scope.replace('.', '/'),
-        dsetprefix,
+        pfn_prefix,
         hs[0:2],
         hs[2:4],
         name
     )
+
+    # Cache the PFN in the Rucio metadata for next time
+    if getattr(rsemanager, 'CLIENT_MODE', None):
+        try:
+            didclient.set_metadata(internal_scope, name, md_key, pfn)
+        except:
+            pass
+    if getattr(rsemanager, 'SERVER_MODE', None):
+        from rucio.core.did import set_metadata
+        try:
+            set_metadata(internal_scope, name, md_key, pfn)
+        except:
+            pass
 
     return pfn
