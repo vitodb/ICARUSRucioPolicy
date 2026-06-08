@@ -35,10 +35,11 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
     pfn_prefix = 'generic'
     dsetname = ''
     try:
-        didmd = didclient.get_metadata(scope,name)
-        guid = didmd.get("guid")
-        dsetlst = didclient.get_dataset_by_guid(guid)
-        dsetname = list(dsetlst)[0].get("name")
+        p_dids = didclient.list_parent_dids(scope, name)
+        for mydid in p_dids:
+            if mydid.get("type")=='DATASET':
+                dsetname = mydid.get("name")
+                break
         pfn_prefix = dsetname
     except:
         pass
