@@ -19,9 +19,9 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
         except:
             pass
     if getattr(rsemanager, 'SERVER_MODE', None):
-        from rucio.core.did import get_metadata
+        from rucio.core import did as didclient
         try:
-            didmd = get_metadata(internal_scope, name)
+            didmd = didclient.get_metadata(internal_scope, name)
         except:
             pass
 
