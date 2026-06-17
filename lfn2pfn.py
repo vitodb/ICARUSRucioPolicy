@@ -35,7 +35,7 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
     pfn_prefix = 'generic'
     dsetname = ''
     try:
-        p_dids = didclient.list_parent_dids(scope, name)
+        p_dids = didclient.list_parent_dids(internal_scope, name)
         for mydid in p_dids:
             if mydid.get("type")=='DATASET':
                 dsetname = mydid.get("name")
