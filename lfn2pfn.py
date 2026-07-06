@@ -15,7 +15,7 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
         didclient = DIDClient()
         try:
             # this may fail if DID not yet registered with Rucio
-            didmd = didclient.get_metadata(internal_scope, name)
+            didmd = didclient.get_metadata(scope, name)
         except:
             pass
     if getattr(rsemanager, 'SERVER_MODE', None):
@@ -25,22 +25,14 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
         except:
             pass
 
-    # if it is, just return it
-    md_key = 'PFN_' + rse
-    if md_key in didmd:
-        return didmd[md_key]
-
     # set pfn using as prefix the string 'generic',
-    # or the file's dataset name if it has one,
+    # or the file's 'campaign' metadata value it has one,
     pfn_prefix = 'generic'
-    dsetname = ''
+    campaign = ''
     try:
-        p_dids = didclient.list_parent_dids(internal_scope, name)
-        for mydid in p_dids:
-            if mydid.get("type")=='DATASET':
-                dsetname = mydid.get("name")
-                break
-        pfn_prefix = dsetname
+        campaign = didmd.get("campaign")
+        if campaign:
+            pfn_prefix = campaign
     except:
         pass
 
@@ -53,18 +45,5 @@ def lfn2pfn_SLAC_ICARUS(scope, name, rse, rse_attrs, protocol_attrs):
         hs[2:4],
         name
     )
-
-    # Cache the PFN in the Rucio metadata for next time
-    if getattr(rsemanager, 'CLIENT_MODE', None):
-        try:
-            didclient.set_metadata(internal_scope, name, md_key, pfn)
-        except:
-            pass
-    if getattr(rsemanager, 'SERVER_MODE', None):
-        from rucio.core.did import set_metadata
-        try:
-            set_metadata(internal_scope, name, md_key, pfn)
-        except:
-            pass
 
     return pfn
